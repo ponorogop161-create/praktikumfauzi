@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Praktikum 5 - POST Data ke API</title>
+</head>
+<body>
+
+  <h2>Form Tambah Data Pengguna (POST)</h2>
+  
+  <form id="formUser">
+    <label>Nama:</label><br>
+    <input type="text" id="nama" required><br><br>
+
+    <label>Email:</label><br>
+    <input type="email" id="email" required><br><br>
+
+    <button type="submit">Kirim Data</button>
+  </form>
+
+  <h3>Respon Server:</h3>
+  <pre id="hasilRespon">- Belum ada data dikirim -</pre>
+
+  <script>
+    document.getElementById("formUser").addEventListener("submit", function(e) {
+      e.preventDefault(); // Mencegah reload halaman
+
+      const dataBaru = {
+        name: document.getElementById("nama").value,
+        email: document.getElementById("email").value
+      };
+
+      fetch("https://jsonplaceholder.typicode.com/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dataBaru)
+      })
+      .then(response => response.json())
+      .then(result => {
+        document.getElementById("hasilRespon").innerText = 
+          "Data Berhasil Dikirim!\nID yang diberikan server: " + result.id + 
+          "\nDetail: " + JSON.stringify(result, null, 2);
+      })
+      .catch(err => {
+        alert("Gagal mengirim data!");
+      });
+    });
+  </script>
+
+</body>
+</html>

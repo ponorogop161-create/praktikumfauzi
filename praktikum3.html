@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Praktikum 3 - Tabel API</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Daftar Pengguna (API JSONPlaceholder)</h2>
+  <button onclick="loadData()">Muat Data Tabel</button>
+
+  <table id="tabelUser" style="display:none;">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Nama</th>
+        <th>Email</th>
+        <th>Kota</th>
+        <th>Perusahaan</th>
+      </tr>
+    </thead>
+    <tbody id="isiTabel"></tbody>
+  </table>
+
+  <script>
+    function loadData() {
+      fetch("https://jsonplaceholder.typicode.com/users")
+        .then(response => response.json())
+        .then(data => {
+          let html = "";
+          data.forEach(function(item, index) {
+            html += `<tr>
+              <td>${index + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.email}</td>
+              <td>${item.address.city}</td>
+              <td>${item.company.name}</td>
+            </tr>`;
+          });
+          
+          document.getElementById("isiTabel").innerHTML = html;
+          document.getElementById("tabelUser").style.display = "table";
+        });
+    }
+  </script>
+
+</body>
+</html>

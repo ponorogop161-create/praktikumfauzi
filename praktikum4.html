@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Praktikum 4 - Loading & Error Handling</title>
+</head>
+<body>
+
+  <h2>Ambil Data dengan Handling Status</h2>
+  <button onclick="loadData()">Ambil Data</button>
+
+  <p id="status"></p>
+  <ul id="daftarUser"></ul>
+
+  <script>
+    function loadData() {
+      const statusEl = document.getElementById("status");
+      const listEl = document.getElementById("daftarUser");
+
+      // 1. Tampilkan status Loading
+      statusEl.innerText = "Sedang mengambil data dari server...";
+      listEl.innerHTML = "";
+
+      // Menggunakan URL sengaja salah/benar untuk uji coba
+      fetch("https://jsonplaceholder.typicode.com/users")
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Gagal terhubung ke server (Status: " + response.status + ")");
+          }
+          return response.json();
+        })
+        .then(data => {
+          statusEl.innerText = "Berhasil memuat " + data.length + " data!";
+          
+          let html = "";
+          data.forEach(item => {
+            html += `<li>${item.name} - ${item.email}</li>`;
+          });
+          listEl.innerHTML = html;
+        })
+        .catch(error => {
+          // 2. Menangani jika terjadi Error
+          statusEl.innerText = "Error: " + error.message;
+          statusEl.style.color = "red";
+        });
+    }
+  </script>
+
+</body>
+</html>
