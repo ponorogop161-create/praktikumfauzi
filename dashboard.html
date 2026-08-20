@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konsol Praktikum · Fetch API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0f1e;
+    --bg-panel:#111a2e;
+    --bg-panel-alt:#17223b;
+    --bg-inset:#0d1526;
+    --border:#243352;
+    --border-soft:#1b2740;
+    --text-primary:#e7ebf5;
+    --text-muted:#8592b0;
+    --text-dim:#526089;
+    --cyan:#3fd0e0;
+    --cyan-dim:#1f4a52;
+    --violet:#b18bf5;
+    --violet-dim:#3a2e5c;
+    --green:#3fe0a5;
+    --amber:#f5c26b;
+    --rose:#f5738a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 15% -10%, #142140 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 10%, #17203a 0%, transparent 55%),
+      var(--bg-deep);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+
+  /* ---------- shell ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns:250px 1fr;
+    min-height:100vh;
+  }
+  @media (max-width:820px){
+    .shell{grid-template-columns:1fr;}
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    background:linear-gradient(180deg,var(--bg-panel),var(--bg-deep));
+    border-right:1px solid var(--border-soft);
+    padding:26px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+  }
+  @media (max-width:820px){
+    .sidebar{border-right:none;border-bottom:1px solid var(--border-soft);padding:18px;}
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:0 4px;}
+  .brand-dot{
+    width:11px;height:11px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 0 3px rgba(63,224,165,.15);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 3px rgba(63,224,165,.15);}
+    50%{box-shadow:0 0 0 6px rgba(63,224,165,.05);}
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.25;}
+  .brand-text .k{font-size:15px;font-weight:700;}
+  .brand-text .s{font-size:11px;color:var(--text-dim);letter-spacing:.04em;}
+
+  .nav{display:flex;flex-direction:column;gap:6px;}
+  @media (max-width:820px){
+    .nav{flex-direction:row;overflow-x:auto;gap:8px;padding-bottom:4px;}
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 12px;
+    border-radius:10px;
+    border:1px solid transparent;
+    cursor:pointer;
+    background:transparent;
+    transition:.15s ease;
+    white-space:nowrap;
+  }
+  .nav-item:hover{background:var(--bg-panel-alt);}
+  .nav-item.active{
+    background:var(--bg-panel-alt);
+    border-color:var(--border);
+  }
+  .nav-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    width:24px;
+  }
+  .nav-item.active .nav-num{color:var(--cyan);}
+  .nav-meta{display:flex;flex-direction:column;gap:3px;}
+  .nav-title{font-size:13.5px;font-weight:600;}
+  .nav-sub{display:flex;align-items:center;gap:6px;}
+  .method-chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    font-weight:700;
+    padding:1.5px 6px;
+    border-radius:4px;
+    letter-spacing:.03em;
+  }
+  .method-chip.get{background:var(--cyan-dim);color:var(--cyan);}
+  .method-chip.post{background:var(--violet-dim);color:var(--violet);}
+  .nav-endpoint{font-size:10.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+
+  .sidebar-foot{
+    margin-top:auto;
+    padding:12px;
+    border-radius:10px;
+    background:var(--bg-inset);
+    border:1px solid var(--border-soft);
+    font-size:11px;
+    color:var(--text-dim);
+    line-height:1.6;
+  }
+  .sidebar-foot b{color:var(--text-muted);}
+
+  /* ---------- main ---------- */
+  main{padding:30px 34px 50px;max-width:920px;}
+  @media (max-width:820px){main{padding:22px 18px 40px;}}
+
+  .panel{display:none;}
+  .panel.active{display:block;animation:rise .35s ease both;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .panel-head{margin-bottom:20px;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;}
+  .panel-desc{color:var(--text-muted);font-size:14px;line-height:1.55;max-width:60ch;}
+
+  /* request bar — signature element */
+  .request-bar{
+    display:flex;
+    align-items:center;
+    gap:0;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    margin:22px 0 18px;
+    overflow:hidden;
+    box-shadow:0 8px 24px -12px rgba(0,0,0,.5);
+  }
+  .rb-method{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    padding:14px 16px;
+    letter-spacing:.03em;
+    border-right:1px solid var(--border);
+  }
+  .rb-method.get{color:var(--cyan);background:rgba(63,208,224,.06);}
+  .rb-method.post{color:var(--violet);background:rgba(177,139,245,.06);}
+  .rb-url{
+    flex:1;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--text-muted);
+    padding:14px 16px;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  .rb-url span{color:var(--text-primary);}
+  .rb-send{
+    border:none;
+    background:var(--text-primary);
+    color:var(--bg-deep);
+    font-weight:700;
+    font-size:13px;
+    padding:14px 22px;
+    cursor:pointer;
+    transition:.15s ease;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Inter',sans-serif;
+  }
+  .rb-send:hover{background:var(--cyan);}
+  .rb-send:active{transform:scale(.97);}
+  .rb-send:disabled{opacity:.5;cursor:not-allowed;}
+
+  .option-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+    font-size:12.5px;
+    color:var(--text-muted);
+  }
+  .switch{
+    position:relative;width:36px;height:20px;
+    background:var(--bg-inset);border:1px solid var(--border);
+    border-radius:20px;cursor:pointer;flex-shrink:0;
+  }
+  .switch::after{
+    content:'';position:absolute;top:2px;left:2px;
+    width:14px;height:14px;border-radius:50%;
+    background:var(--text-dim);transition:.2s ease;
+  }
+  .switch.on{background:rgba(245,115,138,.15);border-color:var(--rose);}
+  .switch.on::after{transform:translateX(16px);background:var(--rose);}
+
+  /* status line */
+  .status-line{
+    display:flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+    min-height:20px;
+    margin-bottom:14px;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;}
+  .status-dot.pending{background:var(--amber);animation:blink 1s infinite;}
+  .status-dot.ok{background:var(--green);}
+  .status-dot.err{background:var(--rose);}
+  @keyframes blink{50%{opacity:.3;}}
+  .status-code{
+    font-weight:700;padding:1px 7px;border-radius:5px;font-size:11px;
+  }
+  .status-code.ok{background:rgba(63,224,165,.12);color:var(--green);}
+  .status-code.err{background:rgba(245,115,138,.12);color:var(--rose);}
+
+  /* response console */
+  .console{
+    background:var(--bg-inset);
+    border:1px solid var(--border-soft);
+    border-radius:12px;
+    padding:4px;
+    min-height:120px;
+  }
+  .console-inner{padding:14px;}
+  .empty-state{
+    padding:36px 20px;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:13px;
+  }
+  .empty-state .glyph{font-size:22px;display:block;margin-bottom:10px;opacity:.6;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--text-dim);
+    padding:8px 10px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  tbody td{
+    padding:10px;
+    border-bottom:1px solid var(--border-soft);
+    color:var(--text-muted);
+    vertical-align:top;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--bg-panel-alt);}
+  td.num{color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11.5px;width:34px;}
+  td.title-cell{color:var(--text-primary);}
+  td.name-cell{color:var(--text-primary);font-weight:500;}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 9px;border-radius:20px;
+    font-size:11px;font-weight:600;
+  }
+  .badge.selesai{background:rgba(63,224,165,.12);color:var(--green);}
+  .badge.belum{background:rgba(245,115,138,.12);color:var(--rose);}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+  .user-row{
+    display:flex;flex-direction:column;gap:2px;
+    padding:12px 10px;border-bottom:1px solid var(--border-soft);
+  }
+  .user-row:last-child{border-bottom:none;}
+  .user-row .u-name{font-weight:600;font-size:13.5px;color:var(--text-primary);}
+  .user-row .u-meta{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+
+  /* pagination */
+  .pagination{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:12px 4px 4px;
+    flex-wrap:wrap;
+  }
+  .pg-info{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--text-dim);
+  }
+  .pg-controls{display:flex;align-items:center;gap:6px;}
+  .pg-btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    min-width:30px;
+    height:30px;
+    padding:0 8px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:7px;
+    border:1px solid var(--border);
+    background:var(--bg-panel);
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  .pg-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);}
+  .pg-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .pg-btn.active{background:var(--cyan);border-color:var(--cyan);color:var(--bg-deep);}
+  .pg-ellipsis{color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:12px;padding:0 2px;}
+
+  /* form */
+  .form-grid{display:flex;flex-direction:column;gap:14px;max-width:420px;}
+  label{font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block;font-weight:500;}
+  input[type=text],input[type=email]{
+    width:100%;
+    background:var(--bg-deep);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:11px 12px;
+    color:var(--text-primary);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    outline:none;
+    transition:.15s ease;
+  }
+  input[type=text]:focus,input[type=email]:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(177,139,245,.12);}
+  .field{margin-bottom:2px;}
+  .submit-btn{
+    border:none;
+    background:var(--violet);
+    color:#1a1330;
+    font-weight:700;
+    font-size:13.5px;
+    padding:12px 20px;
+    border-radius:9px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:.15s ease;
+    align-self:flex-start;
+    margin-top:4px;
+  }
+  .submit-btn:hover{background:#c5a8fb;}
+  .submit-btn:active{transform:scale(.97);}
+
+  .json-block{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--green);
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.7;
+  }
+  .json-block .k{color:var(--cyan);}
+
+  ::-webkit-scrollbar{height:6px;width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div class="brand-text">
+        <span class="k display">Konsol Praktikum</span>
+        <span class="s mono">SMK RPL · Fetch API</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" data-panel="p1">
+        <span class="nav-num">02</span>
+        <div class="nav-meta">
+          <span class="nav-title">Daftar Tugas</span>
+          <span class="nav-sub">
+            <span class="method-chip get">GET</span>
+            <span class="nav-endpoint">/todos</span>
+          </span>
+        </div>
+      </div>
+      <div class="nav-item" data-panel="p2">
+        <span class="nav-num">03</span>
+        <div class="nav-meta">
+          <span class="nav-title">Tabel Pengguna</span>
+          <span class="nav-sub">
+            <span class="method-chip get">GET</span>
+            <span class="nav-endpoint">/users</span>
+          </span>
+        </div>
+      </div>
+      <div class="nav-item" data-panel="p3">
+        <span class="nav-num">04</span>
+        <div class="nav-meta">
+          <span class="nav-title">Loading &amp; Error</span>
+          <span class="nav-sub">
+            <span class="method-chip get">GET</span>
+            <span class="nav-endpoint">/users</span>
+          </span>
+        </div>
+      </div>
+      <div class="nav-item" data-panel="p4">
+        <span class="nav-num">05</span>
+        <div class="nav-meta">
+          <span class="nav-title">Praktikum 5</span>
+          <span class="nav-sub">
+            <span class="method-chip post">POST</span>
+            <span class="nav-endpoint">/users</span>
+          </span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      Semua permintaan diarahkan ke <b>jsonplaceholder.typicode.com</b>, API tiruan untuk latihan Fetch API.
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- PANEL 1 — Todos -->
+    <section class="panel active" id="p1">
+      <div class="panel-head">
+        <div class="eyebrow mono">Tugas Mandiri</div>
+        <h1>Daftar Tugas</h1>
+        <p class="panel-desc">Mengambil data todo dari JSONPlaceholder dan menandai setiap item sebagai selesai atau belum. Ditampilkan 20 tugas per halaman.</p>
+      </div>
+
+      <div class="request-bar">
+        <span class="rb-method get">GET</span>
+        <span class="rb-url">https://jsonplaceholder.typicode.com/<span>todos</span></span>
+        <button class="rb-send" id="btn1" onclick="loadTodos()">▸ Kirim</button>
+      </div>
+
+      <div class="status-line" id="status1"></div>
+
+      <div class="console">
+        <div class="console-inner" id="out1">
+          <div class="empty-state">
+            <span class="glyph">◌</span>
+            Klik <b>Kirim</b> untuk mengambil daftar tugas
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" id="pagination1" style="display:none;"></div>
+    </section>
+
+    <!-- PANEL 2 — Users table -->
+    <section class="panel" id="p2">
+      <div class="panel-head">
+        <div class="eyebrow mono">Praktikum 03</div>
+        <h1>Tabel Pengguna</h1>
+        <p class="panel-desc">Menyusun data pengguna dari API ke dalam tabel: nama, email, kota, dan perusahaan.</p>
+      </div>
+
+      <div class="request-bar">
+        <span class="rb-method get">GET</span>
+        <span class="rb-url">https://jsonplaceholder.typicode.com/<span>users</span></span>
+        <button class="rb-send" id="btn2" onclick="loadUsers()">▸ Kirim</button>
+      </div>
+
+      <div class="status-line" id="status2"></div>
+
+      <div class="console">
+        <div class="console-inner" id="out2">
+          <div class="empty-state">
+            <span class="glyph">◌</span>
+            Klik <b>Kirim</b> untuk memuat tabel pengguna
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 3 — Loading & Error -->
+    <section class="panel" id="p3">
+      <div class="panel-head">
+        <div class="eyebrow mono">Praktikum 04</div>
+        <h1>Loading &amp; Error Handling</h1>
+        <p class="panel-desc">Menampilkan status permintaan secara eksplisit — sedang memuat, berhasil, atau gagal.</p>
+      </div>
+
+      <div class="option-row">
+        <div class="switch" id="errSwitch" onclick="toggleErrSim()"></div>
+        <span>Simulasikan kegagalan (memanggil endpoint yang tidak ada)</span>
+      </div>
+
+      <div class="request-bar">
+        <span class="rb-method get">GET</span>
+        <span class="rb-url">https://jsonplaceholder.typicode.com/<span id="p3url">users</span></span>
+        <button class="rb-send" id="btn3" onclick="loadWithHandling()">▸ Kirim</button>
+      </div>
+
+      <div class="status-line" id="status3"></div>
+
+      <div class="console">
+        <div class="console-inner" id="out3">
+          <div class="empty-state">
+            <span class="glyph">◌</span>
+            Klik <b>Kirim</b> untuk menguji penanganan status
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 4 — POST form -->
+    <section class="panel" id="p4">
+      <div class="panel-head">
+        <div class="eyebrow mono">Praktikum 05</div>
+        <h1>Tambah Pengguna</h1>
+        <p class="panel-desc">Mengirim data baru ke server dengan metode POST dan menampilkan respon yang dikembalikan.</p>
+      </div>
+
+      <div class="request-bar">
+        <span class="rb-method post">POST</span>
+        <span class="rb-url">https://jsonplaceholder.typicode.com/<span>users</span></span>
+      </div>
+
+      <form class="form-grid" id="formUser">
+        <div class="field">
+          <label for="nama">Nama</label>
+          <input type="text" id="nama" placeholder="mis. Siti Aminah" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="mis. siti@contoh.id" required>
+        </div>
+        <button type="submit" class="submit-btn" id="btn4">Kirim Data</button>
+      </form>
+
+      <div class="status-line" id="status4" style="margin-top:18px;"></div>
+
+      <div class="console">
+        <div class="console-inner" id="out4">
+          <div class="empty-state">
+            <span class="glyph">◌</span>
+            Isi form lalu kirim untuk melihat respon server
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ---------- navigation ---------- */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById(item.dataset.panel).classList.add('active');
+  });
+});
+
+/* ---------- helpers ---------- */
+function setStatus(id, dotClass, text, codeHtml){
+  const el = document.getElementById(id);
+  el.innerHTML = `<span class="status-dot ${dotClass}"></span>${text}${codeHtml||''}`;
+}
+
+/* ---------- Panel 1: Todos (dengan paginasi) ---------- */
+const TODOS_PER_PAGE = 20;
+let allTodos = [];
+let todosPage = 1;
+
+function loadTodos(){
+  const btn = document.getElementById('btn1');
+  const out = document.getElementById('out1');
+  const pager = document.getElementById('pagination1');
+  btn.disabled = true;
+  setStatus('status1','pending','Mengambil data…');
+  out.innerHTML = '';
+  pager.style.display = 'none';
+
+  fetch('https://jsonplaceholder.typicode.com/todos')
+    .then(res=>{
+      if(!res.ok) throw new Error('Status '+res.status);
+      return res.json();
+    })
+    .then(data=>{
+      allTodos = data;
+      todosPage = 1;
+      setStatus('status1','ok','Berhasil memuat '+data.length+' tugas',
+        '<span class="status-code ok">200 OK</span>');
+      renderTodosPage();
+    })
+    .catch(err=>{
+      setStatus('status1','err','Gagal mengambil data — '+err.message,
+        '<span class="status-code err">ERROR</span>');
+      out.innerHTML = '<div class="empty-state">Terjadi kesalahan saat memuat data.</div>';
+    })
+    .finally(()=>{ btn.disabled = false; });
+}
+
+function renderTodosPage(){
+  const out = document.getElementById('out1');
+  const pager = document.getElementById('pagination1');
+  const totalPages = Math.max(1, Math.ceil(allTodos.length / TODOS_PER_PAGE));
+  todosPage = Math.min(Math.max(1, todosPage), totalPages);
+
+  const start = (todosPage - 1) * TODOS_PER_PAGE;
+  const pageItems = allTodos.slice(start, start + TODOS_PER_PAGE);
+
+  let html = '<table><thead><tr><th>No</th><th>Judul Tugas</th><th>Status</th></tr></thead><tbody>';
+  pageItems.forEach((item,i)=>{
+    const badge = item.completed
+      ? '<span class="badge selesai">Selesai</span>'
+      : '<span class="badge belum">Belum</span>';
+    html += `<tr><td class="num">${start + i + 1}</td><td class="title-cell">${item.title}</td><td>${badge}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  out.innerHTML = html;
+
+  pager.style.display = 'flex';
+  pager.innerHTML = buildPaginationHtml(todosPage, totalPages, allTodos.length, start, pageItems.length);
+}
+
+function buildPaginationHtml(current, total, totalItems, start, shown){
+  const info = `<span class="pg-info">Menampilkan ${start+1}–${start+shown} dari ${totalItems} tugas</span>`;
+
+  let numbers = '';
+  const pushBtn = (p, label, active) =>
+    `<button class="pg-btn${active?' active':''}" onclick="goToTodosPage(${p})">${label}</button>`;
+
+  numbers += `<button class="pg-btn" ${current===1?'disabled':''} onclick="goToTodosPage(${current-1})">‹</button>`;
+
+  const windowSize = 1;
+  const pages = [];
+  pages.push(1);
+  for(let p = current - windowSize; p <= current + windowSize; p++){
+    if(p > 1 && p < total) pages.push(p);
+  }
+  if(total > 1) pages.push(total);
+  const uniquePages = [...new Set(pages)].sort((a,b)=>a-b);
+
+  let prev = 0;
+  uniquePages.forEach(p=>{
+    if(prev && p - prev > 1){
+      numbers += '<span class="pg-ellipsis">···</span>';
+    }
+    numbers += pushBtn(p, p, p === current);
+    prev = p;
+  });
+
+  numbers += `<button class="pg-btn" ${current===total?'disabled':''} onclick="goToTodosPage(${current+1})">›</button>`;
+
+  return info + `<div class="pg-controls">${numbers}</div>`;
+}
+
+function goToTodosPage(p){
+  todosPage = p;
+  renderTodosPage();
+  document.getElementById('out1').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ---------- Panel 2: Users table ---------- */
+function loadUsers(){
+  const btn = document.getElementById('btn2');
+  const out = document.getElementById('out2');
+  btn.disabled = true;
+  setStatus('status2','pending','Mengambil data…');
+  out.innerHTML = '';
+
+  fetch('https://jsonplaceholder.typicode.com/users')
+    .then(res=>{
+      if(!res.ok) throw new Error('Status '+res.status);
+      return res.json();
+    })
+    .then(data=>{
+      setStatus('status2','ok','Berhasil memuat '+data.length+' pengguna',
+        '<span class="status-code ok">200 OK</span>');
+      let html = '<table><thead><tr><th>No</th><th>Nama</th><th>Email</th><th>Kota</th><th>Perusahaan</th></tr></thead><tbody>';
+      data.forEach((item,i)=>{
+        html += `<tr>
+          <td class="num">${i+1}</td>
+          <td class="name-cell">${item.name}</td>
+          <td class="mono" style="font-size:12px;">${item.email}</td>
+          <td>${item.address.city}</td>
+          <td>${item.company.name}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      out.innerHTML = html;
+    })
+    .catch(err=>{
+      setStatus('status2','err','Gagal mengambil data — '+err.message,
+        '<span class="status-code err">ERROR</span>');
+      out.innerHTML = '<div class="empty-state">Terjadi kesalahan saat memuat data.</div>';
+    })
+    .finally(()=>{ btn.disabled = false; });
+}
+
+/* ---------- Panel 3: Loading & Error handling ---------- */
+let simulateError = false;
+function toggleErrSim(){
+  simulateError = !simulateError;
+  document.getElementById('errSwitch').classList.toggle('on', simulateError);
+  document.getElementById('p3url').textContent = simulateError ? 'users-endpoint-rusak' : 'users';
+}
+
+function loadWithHandling(){
+  const btn = document.getElementById('btn3');
+  const out = document.getElementById('out3');
+  const url = 'https://jsonplaceholder.typicode.com/' + (simulateError ? 'users-endpoint-rusak' : 'users');
+  btn.disabled = true;
+  setStatus('status3','pending','Sedang menghubungi server…');
+  out.innerHTML = '';
+
+  fetch(url)
+    .then(res=>{
+      if(!res.ok){
+        throw new Error('Gagal terhubung ke server (Status: '+res.status+')');
+      }
+      return res.json();
+    })
+    .then(data=>{
+      setStatus('status3','ok','Berhasil memuat '+data.length+' data',
+        '<span class="status-code ok">200 OK</span>');
+      let html = '';
+      data.forEach(item=>{
+        html += `<div class="user-row">
+          <span class="u-name">${item.name}</span>
+          <span class="u-meta">${item.email}</span>
+        </div>`;
+      });
+      out.innerHTML = html;
+    })
+    .catch(err=>{
+      setStatus('status3','err', err.message, '<span class="status-code err">GAGAL</span>');
+      out.innerHTML = '<div class="empty-state">⚠ '+err.message+'</div>';
+    })
+    .finally(()=>{ btn.disabled = false; });
+}
+
+/* ---------- Panel 4: POST form ---------- */
+document.getElementById('formUser').addEventListener('submit', function(e){
+  e.preventDefault();
+  const btn = document.getElementById('btn4');
+  const out = document.getElementById('out4');
+  const nama = document.getElementById('nama').value;
+  const email = document.getElementById('email').value;
+
+  btn.disabled = true;
+  setStatus('status4','pending','Mengirim data…');
+  out.innerHTML = '';
+
+  fetch('https://jsonplaceholder.typicode.com/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nama, email: email })
+  })
+    .then(res=>{
+      if(!res.ok) throw new Error('Status '+res.status);
+      return res.json();
+    })
+    .then(result=>{
+      setStatus('status4','ok','Data terkirim, ID diberikan: '+result.id,
+        '<span class="status-code ok">201 CREATED</span>');
+      out.innerHTML = `<div class="json-block">{
+  <span class="k">"id"</span>: ${result.id},
+  <span class="k">"name"</span>: "${result.name}",
+  <span class="k">"email"</span>: "${result.email}"
+}</div>`;
+    })
+    .catch(err=>{
+      setStatus('status4','err','Gagal mengirim data — '+err.message,
+        '<span class="status-code err">ERROR</span>');
+      out.innerHTML = '<div class="empty-state">Terjadi kesalahan saat mengirim data.</div>';
+    })
+    .finally(()=>{ btn.disabled = false; });
+});
+</script>
+
+</body>
+</html>
