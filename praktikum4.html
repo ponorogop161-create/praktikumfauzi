@@ -2,26 +2,123 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Praktikum 4 - Loading & Error Handling</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --error-color: #ef4444;
+      --success-color: #10b981;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: var(--text-main);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: transform 0.1s;
+    }
+
+    li:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .user-email {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
 </head>
 <body>
 
-  <h2>Ambil Data dengan Handling Status</h2>
-  <button onclick="loadData()">Ambil Data</button>
+  <div class="container">
+    <h2>Ambil Data dengan Handling Status</h2>
+    <button onclick="loadData()">Ambil Data</button>
 
-  <p id="status"></p>
-  <ul id="daftarUser"></ul>
+    <p id="status"></p>
+    <ul id="daftarUser"></ul>
+  </div>
 
   <script>
     function loadData() {
       const statusEl = document.getElementById("status");
       const listEl = document.getElementById("daftarUser");
 
-      // 1. Tampilkan status Loading
+      // 1. Tampilkan status Loading & reset warna teks
       statusEl.innerText = "Sedang mengambil data dari server...";
+      statusEl.style.color = "var(--text-main)";
       listEl.innerHTML = "";
 
-      // Menggunakan URL sengaja salah/benar untuk uji coba
+      // Menggunakan URL untuk uji coba
       fetch("https://jsonplaceholder.typicode.com/users")
         .then(response => {
           if (!response.ok) {
@@ -31,17 +128,23 @@
         })
         .then(data => {
           statusEl.innerText = "Berhasil memuat " + data.length + " data!";
+          statusEl.style.color = "var(--success-color)";
           
           let html = "";
           data.forEach(item => {
-            html += `<li>${item.name} - ${item.email}</li>`;
+            html += `
+              <li>
+                <span class="user-name">${item.name}</span>
+                <span class="user-email">${item.email}</span>
+              </li>
+            `;
           });
           listEl.innerHTML = html;
         })
         .catch(error => {
           // 2. Menangani jika terjadi Error
           statusEl.innerText = "Error: " + error.message;
-          statusEl.style.color = "red";
+          statusEl.style.color = "var(--error-color)";
         });
     }
   </script>
